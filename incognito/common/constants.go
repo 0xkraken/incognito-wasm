@@ -1,7 +1,7 @@
 package common
 
 const (
-	MaxShardNumber = 1
+	MaxShardNumber = 8
 
 	TxVersion                        = 1
 	MaxTxSize    = uint64(100)  // unit KB = 100KB

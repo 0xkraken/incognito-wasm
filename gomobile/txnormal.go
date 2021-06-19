@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/0xkraken/incognito-wasm/incognito/common"
 	"github.com/0xkraken/incognito-wasm/incognito/wallet"
+	rCommon "github.com/ethereum/go-ethereum/common"
 
 	"github.com/0xkraken/incognito-wasm/incognito/metadata"
 	"github.com/0xkraken/incognito-wasm/incognito/transaction"
@@ -256,6 +257,90 @@ func InitWithdrawRewardTx(args string, serverTime int64) (string, error) {
 	}
 
 	paramCreateTx.SetMetaData(tmp)
+
+	tx := new(transaction.Tx)
+	err = tx.InitForASM(paramCreateTx, serverTime)
+
+	if err != nil {
+		println("Can not create tx: ", err)
+		return "", err
+	}
+
+	// serialize tx json
+	txJson, err := json.Marshal(tx)
+	if err != nil {
+		println("Can not marshal tx: ", err)
+		return "", err
+	}
+
+	lockTimeBytes := common.AddPaddingBigInt(new(big.Int).SetInt64(tx.LockTime), 8)
+	resBytes := append(txJson, lockTimeBytes...)
+
+	B64Res := base64.StdEncoding.EncodeToString(resBytes)
+
+	return B64Res, nil
+}
+
+func InitIssuingEVMReqTx(args string, serverTime int64) (string, error) {
+	// parse meta data
+	bytes := []byte(args)
+	println("Bytes: %v\n", bytes)
+
+	paramMaps := make(map[string]interface{})
+
+	err := json.Unmarshal(bytes, &paramMaps)
+	if err != nil {
+		println("Error can not unmarshal data : %v\n", err)
+		return "", err
+	}
+
+	println("paramMaps:", paramMaps)
+
+	metaDataParam, ok := paramMaps["metaData"].(map[string]interface{})
+	if !ok {
+		return "", errors.New("Invalid meta data param")
+	}
+
+	metaDataType, ok := metaDataParam["Type"].(float64)
+	if !ok {
+		println("Invalid meta data type param")
+		return "", errors.New("Invalid meta data type param")
+	}
+
+	blockHash := rCommon.HexToHash(metaDataParam["BlockHash"].(string))
+	txIdx := uint(metaDataParam["TxIndex"].(float64))
+	proofsRaw, ok := metaDataParam["ProofStrs"].([]interface{})
+	if !ok {
+		println("Invalid meta data ProofStrs param, must be an array of string")
+		return "", errors.New("Invalid meta data ProofStrs param, must be an array of string")
+	}
+	proofStrs := []string{}
+	for _, item := range proofsRaw {
+		proofStr, ok := item.(string)
+		if !ok {
+			println("Invalid meta data ProofStrs param, must be an array of string")
+			return "", errors.New("Invalid meta data ProofStrs param, must be an array of string")
+		}
+		proofStrs = append(proofStrs, proofStr)
+	}
+
+	incTokenID, err := common.Hash{}.NewHashFromStr(metaDataParam["IncTokenID"].(string))
+	if err != nil {
+		println("Invalid meta data IncTokenID param")
+		return "", errors.New("Invalid meta data IncTokenID param")
+	}
+
+	metaData, err := metadata.NewIssuingEVMRequest(blockHash, txIdx, proofStrs, *incTokenID, int(metaDataType))
+	if err != nil {
+		return "", err
+	}
+
+	paramCreateTx, err := InitParamCreatePrivacyTx(args)
+	if err != nil {
+		return "", err
+	}
+
+	paramCreateTx.SetMetaData(metaData)
 
 	tx := new(transaction.Tx)
 	err = tx.InitForASM(paramCreateTx, serverTime)

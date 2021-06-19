@@ -211,6 +211,15 @@ func verifySign(_ js.Value, args []js.Value) interface{} {
 	return result
 }
 
+func initIssuingEVMReqTx(_ js.Value, args []js.Value) interface{} {
+	result, err := gomobile.InitIssuingEVMReqTx(args[0].String(), int64(args[1].Int()))
+	if err != nil {
+		return nil
+	}
+
+	return result
+}
+
 func main() {
 	c := make(chan struct{}, 0)
 	println("Hello WASM")
@@ -242,6 +251,8 @@ func main() {
 	js.Global().Set("getSignPublicKey", js.FuncOf(getSignPublicKey))
 	js.Global().Set("signPoolWithdraw", js.FuncOf(signPoolWithdraw))
 	js.Global().Set("verifySign", js.FuncOf(verifySign))
+
+	js.Global().Set("initIssuingEVMReqTx", js.FuncOf(initIssuingEVMReqTx))
 
 	<-c
 }

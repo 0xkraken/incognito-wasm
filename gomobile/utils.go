@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/0xkraken/incognito-wasm/incognito/signatureschemes/blsmultisig"
 	"github.com/0xkraken/incognito-wasm/incognito/privacy"
+	"github.com/0xkraken/incognito-wasm/incognito/transaction"
 	"github.com/0xkraken/incognito-wasm/incognito/wallet"
 	"github.com/0xkraken/incognito-wasm/incognito/base58"
 	"github.com/0xkraken/incognito-wasm/incognito/common"
@@ -197,4 +198,36 @@ func HybridDecryptionASM(dataB64Encode string) (string, error) {
 	}
 	res := base64.StdEncoding.EncodeToString(plaintextBytes)
 	return res, nil
+}
+
+func ParseNativeRawTx(b64RawTx string) (string, error) {
+	 rawTxWithLockTime, err := base64.StdEncoding.DecodeString(b64RawTx)
+	 if err != nil {
+	 	println("Error can not decode data : %v\n", err)
+	 }
+
+	 rawTxBytes := rawTxWithLockTime[:len(rawTxWithLockTime)-8]
+	 var tx transaction.Tx
+	 err = json.Unmarshal(rawTxBytes, &tx)
+	 if err != nil {
+	 	println("Error can not unmarshal data : %v\n", err)
+	 }
+
+	 return tx.Hash().String(), nil
+}
+
+func ParsePrivacyTokenRawTx(b64RawTx string) (string, error) {
+	rawTxWithLockTime, err := base64.StdEncoding.DecodeString(b64RawTx)
+	if err != nil {
+		println("Error can not decode data : %v\n", err)
+	}
+
+	rawTxBytes := rawTxWithLockTime[:len(rawTxWithLockTime)-40]
+	var tx transaction.TxCustomTokenPrivacy
+	err = json.Unmarshal(rawTxBytes, &tx)
+	if err != nil {
+		println("Error can not unmarshal data : %v\n", err)
+	}
+
+	return tx.Hash().String(), nil
 }

@@ -220,6 +220,24 @@ func initIssuingEVMReqTx(_ js.Value, args []js.Value) interface{} {
 	return result
 }
 
+func parseNativeRawTx(_ js.Value, args []js.Value) interface{} {
+	result, err := gomobile.ParseNativeRawTx(args[0].String())
+	if err != nil {
+		return nil
+	}
+
+	return result
+}
+
+func parsePrivacyTokenRawTx(_ js.Value, args []js.Value) interface{} {
+	result, err := gomobile.ParsePrivacyTokenRawTx(args[0].String())
+	if err != nil {
+		return nil
+	}
+
+	return result
+}
+
 func main() {
 	c := make(chan struct{}, 0)
 	println("Hello WASM")
@@ -253,6 +271,9 @@ func main() {
 	js.Global().Set("verifySign", js.FuncOf(verifySign))
 
 	js.Global().Set("initIssuingEVMReqTx", js.FuncOf(initIssuingEVMReqTx))
+
+	js.Global().Set("parseNativeRawTx", js.FuncOf(parseNativeRawTx))
+	js.Global().Set("parsePrivacyTokenRawTx", js.FuncOf(parsePrivacyTokenRawTx))
 
 	<-c
 }

@@ -36,6 +36,33 @@ type Tx struct {
 	cachedActualSize *uint64      // cached actualsize data for tx
 }
 
+func (tx *Tx) UnmarshalJSON(data []byte) error {
+	type Alias Tx
+	temp := &struct {
+		Metadata *json.RawMessage
+		*Alias
+	}{
+		Alias: (*Alias)(tx),
+	}
+	err := json.Unmarshal(data, &temp)
+	if err != nil {
+		println("UnmarshalJSON tx error: ", err)
+		return fmt.Errorf("UnmarshalJSON tx error: ", err)
+	}
+
+	if temp.Metadata == nil {
+		tx.Metadata = nil
+
+	} else {
+		meta, parseErr := metadata.ParseMetadata(temp.Metadata)
+		if parseErr != nil {
+			return parseErr
+		}
+		tx.Metadata = meta
+	}
+	return nil
+}
+
 type TxPrivacyInitParams struct {
 	senderSK    *privacy.PrivateKey
 	paymentInfo []*privacy.PaymentInfo
